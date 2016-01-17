@@ -3,7 +3,10 @@ package airstrike
 import (
 	"errors"
 	"fmt"
+	"runtime"
+	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/sleepwalker"
 )
 
@@ -22,13 +25,24 @@ type Bomb struct {
 	Payload sleepwalker.RESTObject `json:"payload,omitempty"`
 }
 
-// String implements Stringer.
-func (b *Bomb) String() string {
+// String implements fmt.Stringer.
+func (b Bomb) String() string {
 	return "Bomb: " + b.Name
 }
 
+// func (b Bomb) Client() sleepwalker.RESTClient {
+// 	return b.Client
+// }
+
 // Fire deploys the Bullet.
 func (b Bomb) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+	log.WithFields(logrus.Fields{
+		"bomb": b,
+	}).Debug(desc)
+
 	switch b.Method {
 	case "GET", "get":
 		return b.handler(b.Client.Get)
@@ -43,10 +57,35 @@ func (b Bomb) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
 	return sleepwalker.Result{}, errors.New(msg)
 }
 
-func (b *Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
+func (b Bomb) NoPayloadError(desc string) error {
+	msg := fmt.Sprintf("%v: payload for %v: %v", desc, b, b.Payload)
+	return errors.New(msg)
+}
+
+type NoPayloadError struct {
+	msg string
+	obj interface{}
+}
+
+func (e *NoPayloadError) Error() string {
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+	return fmt.Sprintf("%s: nil payload: %v", e.msg, e.obj)
+}
+
+func (b Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+
+	if b.Payload == nil {
+		log.Warn(&NoPayloadError{desc, b})
+	}
+
 	result, err := fn(b.Payload)
 	if err != nil {
-		log.Errorf("%s.Deploy %s: %v", b.Name, b.Method, err)
+		log.Errorf("%s: %s: %s: %v", desc, b.Name, b.Method, err)
 		return sleepwalker.Result{}, err
 	}
 	result.Log().Debugf("%s.handler", b.Name)

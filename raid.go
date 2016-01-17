@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/sleepwalker"
 )
 
@@ -23,14 +24,14 @@ type Raid struct {
 
 // Conduct concurrently drops all of the Bombs in a Raid's Payload and
 // returns a collection of the results.
-func (r *Raid) Conduct() ([]sleepwalker.Result, error) {
+func (r *Raid) Conduct(logger *logrus.Logger) ([]sleepwalker.Result, error) {
 	var allResults []sleepwalker.Result
 	var reporterWg = sync.WaitGroup{}
 	var ch chan sleepwalker.Result
 
-	for arsenalID, arsenal := range r.Planes {
-		squadron := NewSquadron()
-		go squadron.Bombard(ch, arsenalID, arsenal)
+	for planeID, plane := range r.Planes {
+		squadron := New(logger)
+		go squadron.Bombard(ch, planeID, plane)
 		go func() {
 			reporterWg.Add(1)
 			result := <-ch

@@ -13,7 +13,7 @@ type Missile struct {
 
 // Fire deploys the Missile.
 func (m Missile) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
-	result, err := m.Operation(c)
+	result, err := m.Operation(m.Client)
 	if err != nil {
 		result.Log().Errorf("%s.Deploy %v: %v", m.Name, m.Operation, err)
 		return sleepwalker.Result{}, err

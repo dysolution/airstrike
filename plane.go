@@ -1,6 +1,9 @@
 package airstrike
 
 import (
+	"fmt"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -12,12 +15,15 @@ var log *logrus.Logger
 
 func init() {
 	// log = espsdk.Log
-	log = logrus.New()
-	log.Formatter = &prefixed.TextFormatter{TimestampFormat: time.RFC3339}
+	if log == nil {
+		log = logrus.New()
+		log.Formatter = &prefixed.TextFormatter{TimestampFormat: time.RFC3339}
+	}
 }
 
 type ArmedWeapon interface {
 	Fire(sleepwalker.RESTClient) (sleepwalker.Result, error)
+	fmt.Stringer
 }
 
 // A Plane has an arsenal of deployable weapons. It represents a list of
@@ -38,11 +44,32 @@ type Plane struct {
 
 // Deploy sequentially fires all of the weapons within an Arsenal and reports
 // the results.
-func Deploy(p Plane) ([]sleepwalker.Result, error) {
+func (p Plane) DeployArsenal() ([]sleepwalker.Result, error) {
 	var results []sleepwalker.Result
+
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+	log.Debugf("%s: %v", desc, p)
+
 	for _, weapon := range p.Arsenal {
-		log.Debugf("deploying %s", weapon)
-		result, _ := weapon.Fire(p.Client)
+
+		log.WithFields(logrus.Fields{
+			"client": p.Client,
+			"weapon": weapon,
+		}).Debug(desc)
+
+		if p.Client == nil {
+			log.WithFields(logrus.Fields{
+				"plane": p,
+			}).Warn(desc)
+			continue
+		}
+
+		result, err := weapon.Fire(p.Client)
+		if err != nil {
+			log.Warn(err)
+		}
 		results = append(results, result)
 	}
 	return results, nil
