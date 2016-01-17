@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dysolution/espsdk"
+	"github.com/dysolution/sleepwalker"
 )
 
 // A Bomb represents an action for the API client to perform. Any API
@@ -15,11 +15,11 @@ import (
 // action, e.g., delete the most-recently-created Submission Batch, you should
 // use a Missile instead.
 type Bomb struct {
-	Client  *espsdk.Client
-	Name    string            `json:"name"`
-	Method  string            `json:"method"`
-	URL     string            `json:"url"`
-	Payload espsdk.RESTObject `json:"payload,omitempty"`
+	Client  sleepwalker.RESTClient
+	Name    string                 `json:"name"`
+	Method  string                 `json:"method"`
+	URL     string                 `json:"url"`
+	Payload sleepwalker.RESTObject `json:"payload,omitempty"`
 }
 
 // String implements Stringer.
@@ -28,7 +28,7 @@ func (b *Bomb) String() string {
 }
 
 // Fire deploys the Bullet.
-func (b Bomb) Fire() (espsdk.Result, error) {
+func (b Bomb) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
 	switch b.Method {
 	case "GET", "get":
 		return b.handler(b.Client.Get)
@@ -39,16 +39,16 @@ func (b Bomb) Fire() (espsdk.Result, error) {
 	case "DELETE", "delete":
 		return b.handler(b.Client.Delete)
 	}
-	msg := fmt.Sprintf("%s.Deploy: undefined method: %s", b.Name, b.Method)
-	return espsdk.Result{}, errors.New(msg)
+	msg := fmt.Sprintf("%s.Fire: undefined method: %s", b.Name, b.Method)
+	return sleepwalker.Result{}, errors.New(msg)
 }
 
-func (b *Bomb) handler(fn func(espsdk.Findable) (espsdk.Result, error)) (espsdk.Result, error) {
+func (b *Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
 	result, err := fn(b.Payload)
 	if err != nil {
 		log.Errorf("%s.Deploy %s: %v", b.Name, b.Method, err)
-		return espsdk.Result{}, err
+		return sleepwalker.Result{}, err
 	}
-	result.Log().Debugf("%s.Deploy", b.Name)
+	result.Log().Debugf("%s.handler", b.Name)
 	return result, nil
 }
