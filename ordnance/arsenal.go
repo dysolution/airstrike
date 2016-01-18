@@ -1,4 +1,4 @@
-package arsenal
+package ordnance
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ type ArmedWeapon interface {
 
 type Arsenal []ArmedWeapon
 
-func New(weapons ...ArmedWeapon) Arsenal {
+func NewArsenal(weapons ...ArmedWeapon) Arsenal {
 	var arsenal Arsenal
 	for _, weapon := range weapons {
 		arsenal = append(arsenal, weapon)

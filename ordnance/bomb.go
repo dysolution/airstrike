@@ -1,4 +1,4 @@
-package airstrike
+package ordnance
 
 import (
 	"errors"
@@ -75,7 +75,7 @@ func (e *NoPayloadError) Error() string {
 }
 
 func (b Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
-	myPC, _, _, _ := runtime.Caller(0)
+	myPC, _, _, _ := runtime.Caller(1) // report name of caller, not self
 	desc := runtime.FuncForPC(myPC).Name()
 	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
 
@@ -85,9 +85,18 @@ func (b Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error))
 
 	result, err := fn(b.Payload)
 	if err != nil {
-		log.Errorf("%s: %s: %s: %v", desc, b.Name, b.Method, err)
+		result.Log().WithFields(logrus.Fields{
+			"name":   b.Name,
+			"method": b.Method,
+			"path":   b.URL,
+			"error":  err,
+		}).Errorf(desc)
 		return sleepwalker.Result{}, err
 	}
-	result.Log().Debugf("%s.handler", b.Name)
+	result.Log().WithFields(logrus.Fields{
+		"name":   b.Name,
+		"method": b.Method,
+		"path":   b.URL,
+	}).Infof(desc)
 	return result, nil
 }

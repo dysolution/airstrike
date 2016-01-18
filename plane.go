@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/dysolution/airstrike/arsenal"
+	"github.com/dysolution/airstrike/ordnance"
 	"github.com/dysolution/sleepwalker"
 )
 
@@ -32,7 +32,7 @@ func init() {
 type Plane struct {
 	Name    string `json:"name"`
 	Client  sleepwalker.RESTClient
-	Arsenal arsenal.Arsenal `json:"arsenal"`
+	Arsenal ordnance.Arsenal `json:"arsenal"`
 }
 
 func NewPlane(name string, client sleepwalker.RESTClient) Plane {
@@ -45,7 +45,15 @@ func (e *EmptyArsenalError) Error() string {
 	return "no weapons provided in arsenal"
 }
 
-func (p *Plane) Arm(weapons arsenal.Arsenal) error {
+func (p *Plane) Arm(weapons ordnance.Arsenal) error {
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+	log.WithFields(logrus.Fields{
+		"plane":   p.Name,
+		"weapons": weapons,
+	}).Debug(desc)
+
 	if len(weapons) == 0 {
 	}
 	p.Arsenal = weapons
