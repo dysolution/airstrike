@@ -1,29 +1,22 @@
 package airstrike
 
 import (
-	"fmt"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/dysolution/airstrike/arsenal"
 	"github.com/dysolution/sleepwalker"
-	"github.com/x-cray/logrus-prefixed-formatter"
 )
 
-var log *logrus.Logger
+var log = logrus.New()
 
 func init() {
 	// log = espsdk.Log
-	if log == nil {
-		log = logrus.New()
-		log.Formatter = &prefixed.TextFormatter{TimestampFormat: time.RFC3339}
-	}
-}
-
-type ArmedWeapon interface {
-	Fire(sleepwalker.RESTClient) (sleepwalker.Result, error)
-	fmt.Stringer
+	// if log == nil {
+	// 	log = logrus.New()
+	// 	log.Formatter = &prefixed.TextFormatter{TimestampFormat: time.RFC3339}
+	// }
 }
 
 // A Plane has an arsenal of deployable weapons. It represents a list of
@@ -39,7 +32,24 @@ type ArmedWeapon interface {
 type Plane struct {
 	Name    string `json:"name"`
 	Client  sleepwalker.RESTClient
-	Arsenal []ArmedWeapon `json:"weapons"`
+	Arsenal arsenal.Arsenal `json:"arsenal"`
+}
+
+func NewPlane(name string, client sleepwalker.RESTClient) Plane {
+	return Plane{Name: name, Client: client}
+}
+
+type EmptyArsenalError struct{}
+
+func (e *EmptyArsenalError) Error() string {
+	return "no weapons provided in arsenal"
+}
+
+func (p *Plane) Arm(weapons arsenal.Arsenal) error {
+	if len(weapons) == 0 {
+	}
+	p.Arsenal = weapons
+	return nil
 }
 
 // Deploy sequentially fires all of the weapons within an Arsenal and reports
