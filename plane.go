@@ -1,6 +1,7 @@
 package airstrike
 
 import (
+	"errors"
 	"runtime"
 	"strings"
 
@@ -55,6 +56,7 @@ func (p *Plane) Arm(weapons ordnance.Arsenal) error {
 	}).Debug(desc)
 
 	if len(weapons) == 0 {
+		return errors.New("no weapons provided to arm plane: " + p.Name)
 	}
 	p.Arsenal = weapons
 	return nil
@@ -70,6 +72,14 @@ func (p Plane) DeployArsenal() ([]sleepwalker.Result, error) {
 	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
 
 	for _, weapon := range p.Arsenal {
+
+		if weapon == nil {
+			log.WithFields(logrus.Fields{
+				"client": p.Client,
+				"weapon": weapon,
+			}).Error(desc + ": nil weapon found in plane: " + p.Name)
+			continue
+		}
 
 		log.WithFields(logrus.Fields{
 			"client": p.Client,
