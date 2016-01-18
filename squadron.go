@@ -8,17 +8,26 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/sleepwalker"
+	"github.com/speps/go-hashids"
 )
 
 type Squadron struct {
 	wg sync.WaitGroup
+	ID string
 }
 
 func New(logger *logrus.Logger) Squadron {
 	log = logger
 	log.Debugf("creating squadron")
 	var wg sync.WaitGroup
-	return Squadron{wg}
+
+	hd := hashids.NewData()
+	hd.Salt = "awakened salt"
+	hd.MinLength = 8
+	h := hashids.NewWithData(hd)
+	id, _ := h.Encode([]int{8, 2, 5, int(time.Now().UnixNano())})
+
+	return Squadron{wg, id}
 }
 
 func (s Squadron) Bombard(ch chan sleepwalker.Result, pilotID int, plane Plane, squadronID, urlInvariant string) {
@@ -41,6 +50,7 @@ func (s Squadron) Bombard(ch chan sleepwalker.Result, pilotID int, plane Plane, 
 		log.WithFields(logrus.Fields{
 			"pilot_id":      pilotID,
 			"weapon_id":     weaponID,
+			"squadron_id":   squadronID,
 			"method":        result.Verb,
 			"path":          strings.SplitAfter(result.Path, urlInvariant)[1],
 			"response_time": result.Duration * time.Millisecond,
