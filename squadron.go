@@ -37,7 +37,6 @@ func (s Squadron) Bombard(ch chan sleepwalker.Result, pilotID int, plane Plane, 
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()
 	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-	log.Debugf("%v", desc)
 
 	results, err := plane.DeployArsenal()
 	if err != nil {

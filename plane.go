@@ -60,7 +60,6 @@ func (p Plane) DeployArsenal() ([]sleepwalker.Result, error) {
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()
 	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-	log.Debugf("%s: %v", desc, p)
 
 	for _, weapon := range p.Arsenal {
 
