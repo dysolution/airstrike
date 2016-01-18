@@ -14,6 +14,7 @@ import (
 type Squadron struct {
 	wg sync.WaitGroup
 	ID string
+	// TODO Planes []Plane
 }
 
 func New(logger *logrus.Logger) Squadron {
