@@ -1,15 +1,13 @@
 package ordnance
 
 import (
-	"fmt"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/sleepwalker"
 )
 
 type ArmedWeapon interface {
 	Fire(sleepwalker.RESTClient) (sleepwalker.Result, error)
-	fmt.Stringer
+	String() string
 }
 
 type Arsenal []ArmedWeapon
