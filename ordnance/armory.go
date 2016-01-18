@@ -2,6 +2,9 @@ package ordnance
 
 import (
 	"errors"
+	"math/rand"
+	"sync"
+	"time"
 
 	"github.com/dysolution/sleepwalker"
 )
@@ -14,7 +17,7 @@ func init() {
 }
 
 type Armory struct {
-	Weapons map[string]ArmedWeapon
+	Weapons map[string]ArmedWeapon `json:"weapons"`
 }
 
 func NewArmory(logger *logrus.Logger) Armory {
@@ -72,4 +75,40 @@ func (a Armory) GetWeapon(name string) ArmedWeapon {
 		"name": name,
 	}).Debug(desc)
 	return a.Weapons[name]
+}
+
+func (a *Armory) GetRandomWeaponNames(count int) []string {
+	desc := "Armory.GetRandomWeaponNames"
+	var names []string
+	for i := count; i > 0; i-- {
+		names = append(names, a.getRandomWeapon())
+	}
+
+	log.WithFields(logrus.Fields{
+		"weapons": names,
+	}).Debug(desc)
+	return names
+}
+
+func (a *Armory) getRandomWeapon() string {
+	rand.Seed(time.Now().UTC().UnixNano())
+	m := sync.Mutex{}
+
+	// build a slice of weapon names
+	var weapons []string
+	m.Lock()
+	for name, _ := range a.Weapons {
+		weapons = append(weapons, name)
+	}
+	m.Unlock()
+
+	return weapons[rand.Intn(len(weapons))]
+}
+
+func (a Armory) GetArsenal(names ...string) Arsenal {
+	var arsenal Arsenal
+	for _, name := range names {
+		arsenal = append(arsenal, a.GetWeapon(name))
+	}
+	return arsenal
 }

@@ -2,10 +2,11 @@ package airstrike
 
 import (
 	"encoding/json"
-	"sync"
+	"runtime"
+	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/dysolution/sleepwalker"
 )
 
 type SimpleRaid struct {
@@ -22,24 +23,57 @@ type Raid struct {
 	Planes []Plane `json:"planes"`
 }
 
-// Conduct concurrently drops all of the Bombs in a Raid's Payload and
-// returns a collection of the results.
-func (r *Raid) Conduct(logger *logrus.Logger, urlInvariant string) ([]sleepwalker.Result, error) {
-	var allResults []sleepwalker.Result
-	var reporterWg = sync.WaitGroup{}
-	var ch chan sleepwalker.Result
+func reportResults(ch chan logrus.Fields, urlInvariant string, warningThreshold time.Duration) {
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+	for {
+		fields := <-ch
+		responseTime, _ := fields["response_time"].(time.Duration)
+		if responseTime > warningThreshold {
+			log.WithFields(fields).Warn(desc)
+		} else {
+			log.WithFields(fields).Info(desc)
+		}
+	}
+}
+
+// Conduct tells the Squadron to launch all of its planes. Each Plane serially
+// fires its weapons and sends the result of each weapon down a channel.
+func (r *Raid) Conduct(logger *logrus.Logger, urlInvariant string, warningThreshold time.Duration) {
+	ch := make(chan logrus.Fields)
 
 	squadron := New(logger)
 
-	for planeID, plane := range r.Planes {
-		go squadron.Bombard(ch, planeID, plane, squadron.ID, urlInvariant)
-		go func() {
-			reporterWg.Add(1)
-			result := <-ch
-			allResults = append(allResults, result)
-		}()
+	go reportResults(ch, urlInvariant, warningThreshold)
+
+	for _, plane := range r.Planes {
+
+		go func(plane Plane) {
+			myPC, _, _, _ := runtime.Caller(0)
+			desc := runtime.FuncForPC(myPC).Name()
+			desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+
+			results, err := plane.Launch()
+			if err != nil {
+				ch <- logrus.Fields{"error": err}
+			}
+
+			for weaponID, result := range results {
+				stats := logrus.Fields{
+					"plane":         plane.Name,
+					"weapon_id":     weaponID,
+					"squadron_id":   squadron.ID,
+					"method":        result.Verb,
+					"path":          strings.SplitAfter(result.Path, urlInvariant)[1],
+					"response_time": result.Duration * time.Millisecond,
+					"status_code":   result.StatusCode,
+				}
+				ch <- stats
+			}
+		}(plane)
+
 	}
-	return allResults, nil
 }
 
 func (r *Raid) String() string {

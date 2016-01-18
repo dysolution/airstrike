@@ -30,6 +30,7 @@ func init() {
 //   1. list all batches
 //   2. get the metadata for a batch
 //   3. upload a contribution to the batch
+//
 type Plane struct {
 	Name    string `json:"name"`
 	Client  sleepwalker.RESTClient
@@ -53,58 +54,68 @@ func (e *EmptyArsenalError) Error() string {
 	return "no weapons provided in arsenal"
 }
 
-func (p *Plane) Arm(weapons ordnance.Arsenal) error {
+func (p *Plane) Arm(weapons ordnance.Arsenal) {
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()
 	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-	log.WithFields(logrus.Fields{
-		"plane":   p.Name,
-		"weapons": weapons,
-	}).Debug(desc)
 
 	if len(weapons) == 0 {
-		return errors.New("no weapons provided to arm plane: " + p.Name)
+		log.WithFields(logrus.Fields{
+			"plane":   p.Name,
+			"weapons": weapons,
+			"error":   errors.New("no weapons provided"),
+		}).Error(desc)
+	} else {
+		log.WithFields(logrus.Fields{
+			"plane":   p.Name,
+			"weapons": weapons,
+		}).Debug(desc)
+		p.Arsenal = weapons
 	}
-	p.Arsenal = weapons
-	return nil
 }
 
-// Deploy sequentially fires all of the weapons within an Arsenal and reports
+// Launch tells a Plane to sequentially fires all of its weapons and report
 // the results.
-func (p Plane) DeployArsenal() ([]sleepwalker.Result, error) {
+func (p Plane) Launch() ([]sleepwalker.Result, error) {
 	var results []sleepwalker.Result
 
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()
 	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
 
+	log.WithFields(logrus.Fields{
+		"plane": p,
+	}).Info(desc)
+
 	for _, weapon := range p.Arsenal {
 
 		if weapon == nil {
 			log.WithFields(logrus.Fields{
-				"client": p.Client,
+				"error":  "nil weapon",
+				"plane":  p,
 				"weapon": weapon,
-			}).Error(desc + ": nil weapon found in plane: " + p.Name)
+			}).Error(desc)
 			continue
 		}
 
 		log.WithFields(logrus.Fields{
 			"client": p.Client,
+			"msg":    "firing weapon",
+			"plane":  p,
 			"weapon": weapon,
 		}).Debug(desc)
 
 		if p.Client == nil {
 			log.WithFields(logrus.Fields{
 				"plane": p,
+				"error": "nil client",
 			}).Warn(desc)
 			continue
 		}
 
-		result, err := weapon.Fire(p.Client)
-		if err != nil {
-			log.Warn(err)
-		}
+		result, _ := weapon.Fire(p.Client) // Fire does its own error logging
 		results = append(results, result)
 	}
+	log.Debugf(desc+" is returning %v results", len(results))
 	return results, nil
 }
