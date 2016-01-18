@@ -21,7 +21,7 @@ func New(logger *logrus.Logger) Squadron {
 	return Squadron{wg}
 }
 
-func (s Squadron) Bombard(ch chan sleepwalker.Result, pilotID int, plane Plane) {
+func (s Squadron) Bombard(ch chan sleepwalker.Result, pilotID int, plane Plane, squadronID, urlInvariant string) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
@@ -42,7 +42,7 @@ func (s Squadron) Bombard(ch chan sleepwalker.Result, pilotID int, plane Plane) 
 			"pilot_id":      pilotID,
 			"weapon_id":     weaponID,
 			"method":        result.Verb,
-			"path":          result.Path,
+			"path":          strings.SplitAfter(result.Path, urlInvariant)[1],
 			"response_time": result.Duration * time.Millisecond,
 			"status_code":   result.StatusCode,
 		}).Info(desc)

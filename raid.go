@@ -24,14 +24,15 @@ type Raid struct {
 
 // Conduct concurrently drops all of the Bombs in a Raid's Payload and
 // returns a collection of the results.
-func (r *Raid) Conduct(logger *logrus.Logger) ([]sleepwalker.Result, error) {
+func (r *Raid) Conduct(logger *logrus.Logger, urlInvariant string) ([]sleepwalker.Result, error) {
 	var allResults []sleepwalker.Result
 	var reporterWg = sync.WaitGroup{}
 	var ch chan sleepwalker.Result
 
+	squadron := New(logger)
+
 	for planeID, plane := range r.Planes {
-		squadron := New(logger)
-		go squadron.Bombard(ch, planeID, plane)
+		go squadron.Bombard(ch, planeID, plane, squadron.ID, urlInvariant)
 		go func() {
 			reporterWg.Add(1)
 			result := <-ch
