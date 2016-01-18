@@ -97,6 +97,6 @@ func (b Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error))
 		"name":   b.Name,
 		"method": b.Method,
 		"path":   b.URL,
-	}).Infof(desc)
+	}).Debug(desc)
 	return result, nil
 }

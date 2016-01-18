@@ -37,6 +37,13 @@ type Plane struct {
 }
 
 func NewPlane(name string, client sleepwalker.RESTClient) Plane {
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+	log.WithFields(logrus.Fields{
+		"name":   name,
+		"client": client,
+	}).Debug(desc)
 	return Plane{Name: name, Client: client}
 }
 
