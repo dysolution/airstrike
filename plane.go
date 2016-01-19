@@ -37,6 +37,7 @@ type Plane struct {
 	Arsenal ordnance.Arsenal `json:"arsenal"`
 }
 
+// NewPlane ensures that the creation of each Plane is logged.
 func NewPlane(name string, client sleepwalker.RESTClient) Plane {
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()
@@ -54,6 +55,7 @@ func (e *emptyArsenalError) Error() string {
 	return "no weapons provided in arsenal"
 }
 
+// Arm loads the given arsenal into the Plane and logs error conditions.
 func (p *Plane) Arm(weapons ordnance.Arsenal) {
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()

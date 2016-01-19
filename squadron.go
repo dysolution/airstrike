@@ -13,13 +13,16 @@ import (
 	"github.com/speps/go-hashids"
 )
 
+// A Squadron is a collection of Planes that will simultaneously begin
+// deploying their weapons.
 type Squadron struct {
 	wg     sync.WaitGroup
 	ID     string  `json:"id"`
 	Planes []Plane `json:"planes"`
 }
 
-func New(logger *logrus.Logger) Squadron {
+// NewSquadron assigns each new Squadron a unique ID and logs its creation.
+func NewSquadron(logger *logrus.Logger) Squadron {
 	log = logger
 	log.Debugf("creating squadron")
 	var wg sync.WaitGroup
@@ -33,6 +36,7 @@ func New(logger *logrus.Logger) Squadron {
 	return Squadron{wg, id, []Plane{}}
 }
 
+// Add associates the provided Plane with the Squadron, logging its addition.
 func (s *Squadron) Add(plane Plane) {
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()

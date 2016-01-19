@@ -9,6 +9,7 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
+// A SimpleRaid reports only the name of each object to simplify output.
 type SimpleRaid struct {
 	Planes []struct {
 		Name    string `json:"name"`
@@ -43,7 +44,7 @@ func report(ch chan logrus.Fields, urlInvariant string, warningThreshold time.Du
 func (r *Raid) Conduct(logger *logrus.Logger, urlInvariant string, warningThreshold time.Duration) {
 	ch := make(chan logrus.Fields)
 
-	squadron := New(logger)
+	squadron := NewSquadron(logger)
 
 	go report(ch, urlInvariant, warningThreshold)
 
