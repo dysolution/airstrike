@@ -54,8 +54,7 @@ func (a *Armory) NewBomb(client sleepwalker.RESTClient, name string, method stri
 
 func (a *Armory) NewMissile(client sleepwalker.RESTClient, name string, op func(sleepwalker.RESTClient) (sleepwalker.Result, error)) {
 	log.WithFields(logrus.Fields{
-		"name":      name,
-		"operation": op,
+		"name": name,
 	}).Debugf("Armory.NewMissile")
 	a.Weapons[name] = Missile{
 		Client:    client,

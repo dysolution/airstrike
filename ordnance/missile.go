@@ -26,15 +26,13 @@ func (m Missile) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
 	result, err := m.Operation(m.Client)
 	if err != nil {
 		result.Log().WithFields(logrus.Fields{
-			"name":      m.Name,
-			"operation": m.Operation,
-			"error":     err,
+			"name":  m.Name,
+			"error": err,
 		}).Errorf(desc)
 		return sleepwalker.Result{}, err
 	}
 	result.Log().WithFields(logrus.Fields{
-		"name":      m.Name,
-		"operation": m.Operation,
+		"name": m.Name,
 	}).Debug(desc)
 	return result, nil
 }
