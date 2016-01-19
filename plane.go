@@ -24,9 +24,9 @@ var log = logrus.New()
 //   3. POST create - create and/or associate an item related to the first
 //
 type Plane struct {
-	Name    string `json:"name"`
-	Client  sleepwalker.RESTClient
-	Arsenal ordnance.Arsenal `json:"arsenal"`
+	Name    string                 `json:"name"`
+	Client  sleepwalker.RESTClient `json:"-"`
+	Arsenal ordnance.Arsenal       `json:"arsenal"`
 }
 
 // NewPlane ensures that the creation of each Plane is logged.
