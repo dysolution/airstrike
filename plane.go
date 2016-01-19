@@ -12,14 +12,6 @@ import (
 
 var log = logrus.New()
 
-func init() {
-	// log = espsdk.Log
-	// if log == nil {
-	// 	log = logrus.New()
-	// 	log.Formatter = &prefixed.TextFormatter{TimestampFormat: time.RFC3339}
-	// }
-}
-
 // A Plane has an arsenal of deployable weapons. It represents a list of
 // tasks that, perfored serially, compose a workflow.
 //
@@ -49,18 +41,9 @@ func NewPlane(name string, client sleepwalker.RESTClient) Plane {
 	return Plane{Name: name, Client: client}
 }
 
-type emptyArsenalError struct{}
-
-func (e *emptyArsenalError) Error() string {
-	return "no weapons provided in arsenal"
-}
-
 // Arm loads the given arsenal into the Plane and logs error conditions.
 func (p *Plane) Arm(weapons ordnance.Arsenal) {
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-
+	desc := "airstrike.(*Plane).Arm"
 	if len(weapons) == 0 {
 		log.WithFields(logrus.Fields{
 			"plane":   p.Name,

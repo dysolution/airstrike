@@ -2,8 +2,6 @@ package airstrike
 
 import (
 	"fmt"
-	"runtime"
-	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -37,16 +35,10 @@ func NewSquadron(logger *logrus.Logger) Squadron {
 
 // Add associates the provided Plane with the Squadron, logging its addition.
 func (s *Squadron) Add(plane Plane) {
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-
 	s.Planes = append(s.Planes, plane)
-
 	log.WithFields(logrus.Fields{
-		"plane":  plane.Name,
-		"planes": s.Planes,
-	}).Debug(desc)
+		"plane": plane.Name,
+	}).Debug("airstrike.(*Squadron).Add")
 }
 
 // AddClones creates the specified number of Planes, each armed with the
