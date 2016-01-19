@@ -73,34 +73,38 @@ func (p Plane) Launch() ([]sleepwalker.Result, error) {
 	}).Info(desc)
 
 	for _, weapon := range p.Arsenal {
-
-		if weapon == nil {
+		result, err := p.fireWeapon(weapon)
+		if err != nil {
 			log.WithFields(logrus.Fields{
-				"error":  "nil weapon",
+				"error":  err,
 				"plane":  p,
 				"weapon": weapon,
 			}).Error(desc)
-			continue
 		}
-
-		log.WithFields(logrus.Fields{
-			"client": p.Client,
-			"msg":    "firing weapon",
-			"plane":  p,
-			"weapon": weapon,
-		}).Debug(desc)
-
-		if p.Client == nil {
-			log.WithFields(logrus.Fields{
-				"plane": p,
-				"error": "nil client",
-			}).Warn(desc)
-			continue
-		}
-
-		result, _ := weapon.Fire(p.Client) // Fire does its own error logging
 		results = append(results, result)
 	}
 	log.Debugf(desc+" is returning %v results", len(results))
 	return results, nil
+}
+
+func (p Plane) fireWeapon(weapon ordnance.ArmedWeapon) (sleepwalker.Result, error) {
+	myPC, _, _, _ := runtime.Caller(0)
+	desc := runtime.FuncForPC(myPC).Name()
+	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+
+	if weapon == nil {
+		return sleepwalker.Result{}, errors.New("nil weapon")
+	}
+	if p.Client == nil {
+		return sleepwalker.Result{}, errors.New("nil client")
+	}
+
+	log.WithFields(logrus.Fields{
+		"client": p.Client,
+		"plane":  p,
+		"weapon": weapon,
+	}).Debug(desc)
+
+	result, _ := weapon.Fire(p.Client) // Fire does its own error logging
+	return result, nil
 }
