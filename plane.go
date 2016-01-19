@@ -27,9 +27,9 @@ func init() {
 // weapon in a plane's arsenal must be deployed one at a time.
 //
 // For example, a common workflow would be:
-//   1. list all batches
-//   2. get the metadata for a batch
-//   3. upload a contribution to the batch
+//   1. GET index - list all items in a collection
+//   2. GET show - get the metadata for an item
+//   3. POST create - create and/or associate an item related to the first
 //
 type Plane struct {
 	Name    string `json:"name"`
