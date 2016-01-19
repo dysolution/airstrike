@@ -66,7 +66,7 @@ func writeConsoleGauge(responseTime time.Duration) {
 
 	// allow chars for "nnnnms" text
 	for i := 0; i <= numBlocks-charsToSave(responseTime); i++ {
-		if i < maxWidth-charsToSave(responseTime) {
+		if i <= maxWidth-charsToSave(responseTime) {
 			fmt.Print("#")
 		}
 	}
