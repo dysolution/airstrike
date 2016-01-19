@@ -48,9 +48,9 @@ func NewPlane(name string, client sleepwalker.RESTClient) Plane {
 	return Plane{Name: name, Client: client}
 }
 
-type EmptyArsenalError struct{}
+type emptyArsenalError struct{}
 
-func (e *EmptyArsenalError) Error() string {
+func (e *emptyArsenalError) Error() string {
 	return "no weapons provided in arsenal"
 }
 
