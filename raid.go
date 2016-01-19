@@ -23,7 +23,7 @@ type Raid struct {
 	Planes []Plane `json:"planes"`
 }
 
-func reportResults(ch chan logrus.Fields, urlInvariant string, warningThreshold time.Duration) {
+func report(ch chan logrus.Fields, urlInvariant string, warningThreshold time.Duration) {
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()
 	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
@@ -45,7 +45,7 @@ func (r *Raid) Conduct(logger *logrus.Logger, urlInvariant string, warningThresh
 
 	squadron := New(logger)
 
-	go reportResults(ch, urlInvariant, warningThreshold)
+	go report(ch, urlInvariant, warningThreshold)
 
 	for _, plane := range r.Planes {
 
