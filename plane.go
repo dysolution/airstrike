@@ -10,8 +10,6 @@ import (
 	"github.com/dysolution/sleepwalker"
 )
 
-var log = logrus.New()
-
 // A Plane has an arsenal of deployable weapons. It represents a list of
 // tasks that, perfored serially, compose a workflow.
 //

@@ -24,6 +24,58 @@ type Raid struct {
 	Planes []Plane `json:"planes"`
 }
 
+func writeLog(responseTime, warningThreshold time.Duration, fields logrus.Fields) {
+	desc := "airstrike.report"
+	if responseTime > warningThreshold {
+		log.WithFields(fields).Warn(desc)
+	} else {
+		log.WithFields(fields).Info(desc)
+	}
+}
+
+func charsToSave(responseTime time.Duration) int {
+	if responseTime/time.Millisecond >= 1000 {
+		return 6
+	}
+	return 5
+}
+
+func writeConsoleLegend() {
+	for i := 0; i <= 8; i++ {
+		for j := 0; j < 10; j++ {
+			if j == 0 {
+				fmt.Printf("%d", i)
+			} else {
+				fmt.Print(" ")
+			}
+
+		}
+	}
+	fmt.Printf("\r")
+}
+
+func writeConsoleGauge(responseTime time.Duration) {
+	// 80 chars * 1 block per 10 ms = 800 ms max resolution
+	maxRes := 800
+	maxWidth := 80
+	blockMS := time.Duration(maxRes) / time.Duration(maxWidth)
+	numBlocks := int(responseTime / blockMS / time.Millisecond)
+	// fmt.Print("[")
+	writeConsoleLegend()
+
+	// allow chars for "nnnnms" text
+	for i := 0; i <= numBlocks-charsToSave(responseTime); i++ {
+		if i < maxWidth-charsToSave(responseTime) {
+			fmt.Print("#")
+		}
+	}
+	fmt.Printf("%dms", responseTime/time.Millisecond)
+	// for i := 1; i < charsToSave(responseTime); i++ {
+	// 	fmt.Print("-")
+	// }
+	fmt.Println()
+}
+
 func report(ch chan logrus.Fields, urlInvariant string, warningThreshold time.Duration) {
 	myPC, _, _, _ := runtime.Caller(0)
 	desc := runtime.FuncForPC(myPC).Name()
@@ -31,11 +83,8 @@ func report(ch chan logrus.Fields, urlInvariant string, warningThreshold time.Du
 	for {
 		fields := <-ch
 		responseTime, _ := fields["response_time"].(time.Duration)
-		if responseTime > warningThreshold {
-			log.WithFields(fields).Warn(desc)
-		} else {
-			log.WithFields(fields).Info(desc)
-		}
+		writeLog(responseTime, warningThreshold, fields)
+		writeConsoleGauge(responseTime)
 	}
 }
 
