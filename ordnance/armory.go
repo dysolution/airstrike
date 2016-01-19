@@ -16,10 +16,13 @@ var log *logrus.Logger
 func init() {
 }
 
+// An Armory maintains a collection of weapons that can be retrieved by name
+// or at random.
 type Armory struct {
 	Weapons map[string]ArmedWeapon `json:"weapons"`
 }
 
+// NewArmory allows the logger to be specified.
 func NewArmory(logger *logrus.Logger) Armory {
 	log = logger
 	weapons := make(map[string]ArmedWeapon)
