@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -16,7 +15,6 @@ import (
 // A Squadron is a collection of Planes that will simultaneously begin
 // deploying their weapons.
 type Squadron struct {
-	wg     sync.WaitGroup
 	ID     string  `json:"id"`
 	Planes []Plane `json:"planes"`
 }
@@ -24,16 +22,17 @@ type Squadron struct {
 // NewSquadron assigns each new Squadron a unique ID and logs its creation.
 func NewSquadron(logger *logrus.Logger) Squadron {
 	log = logger
-	log.Debugf("creating squadron")
-	var wg sync.WaitGroup
-
 	hd := hashids.NewData()
 	hd.Salt = "awakened salt"
 	hd.MinLength = 4
 	h := hashids.NewWithData(hd)
 	id, _ := h.Encode([]int{8, 2, 5, int(time.Now().UnixNano())})
 
-	return Squadron{wg, id, []Plane{}}
+	log.WithFields(logrus.Fields{
+		"id": id,
+	}).Debug("airstrike.NewSquadron")
+
+	return Squadron{id, []Plane{}}
 }
 
 // Add associates the provided Plane with the Squadron, logging its addition.
