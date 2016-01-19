@@ -43,16 +43,16 @@ func (s *Squadron) Add(plane Plane) {
 
 // AddClones creates the specified number of Planes, each armed with the
 // payload described, which can be one or more weapons.
-func (s *Squadron) AddClones(clones int, client sleepwalker.RESTClient, armory ordnance.Armory, weapons ...string) {
+func (s *Squadron) AddClones(clones int, client sleepwalker.RESTClient, armory ordnance.Armory, weaponNames ...string) {
 	for i := 1; i <= clones; i++ {
+		var arsenal ordnance.Arsenal
 		name := fmt.Sprintf("clone_%d_of_%d", i, clones)
-		for _, weapon := range weapons {
+		for _, weapon := range weaponNames {
 			name = fmt.Sprintf("%s_%s", name, weapon)
+			arsenal = append(arsenal, armory.GetWeapon(weapon))
 		}
 		plane := NewPlane(name, client)
-		for _, weapon := range weapons {
-			plane.Arm(armory.GetArsenal(weapon))
-		}
+		plane.Arm(arsenal)
 		s.Add(plane)
 	}
 }
