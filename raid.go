@@ -43,11 +43,14 @@ func (r *Raid) String() string {
 	return string(out)
 }
 
-// NewRaid initializes and returns a Raid, . It should be used in lieu of Raid literals.
-func NewRaid(planes ...Plane) Raid {
-	var payload []Plane
-	for _, plane := range planes {
-		payload = append(payload, plane)
+// NewRaid returns a new Raid. It notifies the user if no planes were given.
+func NewRaid(inputPlanes ...Plane) (Raid, error) {
+	if len(inputPlanes) == 0 {
+		return Raid{}, errors.New("no planes to launch")
 	}
-	return Raid{Planes: payload}
+	var planes []Plane
+	for _, plane := range inputPlanes {
+		planes = append(planes, plane)
+	}
+	return Raid{Planes: planes}, nil
 }
