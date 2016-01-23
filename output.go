@@ -3,6 +3,7 @@ package airstrike
 import (
 	"fmt"
 	"runtime"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
@@ -31,6 +32,9 @@ func (r Reporter) Run() {
 			responseTime, _ := fields["response_time"].(time.Duration)
 			r.writeLog(responseTime, fields)
 			if r.Gauge {
+				if r.MaxColumns == 0 {
+					r.MaxColumns = 80
+				}
 				r.writeConsoleGauge(responseTime)
 			}
 		default:
@@ -78,18 +82,21 @@ func (r Reporter) makeBar(numBlocks int, responseTime time.Duration) string {
 
 func (r Reporter) writeConsoleGauge(responseTime time.Duration) error {
 	// 80 chars * 1 block per 10 ms = 800 ms max resolution
-	maxRes := 800
-	maxWidth := r.MaxColumns
-	blockMS := time.Duration(maxRes) / time.Duration(maxWidth)
+	maxRes := r.MaxColumns * 10
+	blockMS := time.Duration(maxRes) / time.Duration(r.MaxColumns)
 	numBlocks := int(responseTime / blockMS / time.Millisecond)
 	if responseTime != time.Duration(0) {
-		writeConsoleLegend()
+		r.writeConsoleLegend()
 		bar := r.makeBar(numBlocks, responseTime)
 
-		color.Set(color.FgWhite)
+		color.Set(color.FgBlue, color.Bold)
 		defer color.Unset()
+
 		if responseTime > r.WarningThreshold {
-			color.Set(color.FgYellow)
+			color.Set(color.FgYellow, color.Bold)
+		}
+		if responseTime > time.Duration(maxRes)*time.Millisecond {
+			color.Set(color.FgRed, color.Bold)
 		}
 		fmt.Printf("%s[%dms]", bar, responseTime/time.Millisecond)
 		fmt.Println()
@@ -97,11 +104,15 @@ func (r Reporter) writeConsoleGauge(responseTime time.Duration) error {
 	return nil
 }
 
-func writeConsoleLegend() {
-	for i := 0; i <= 8; i++ {
+func (r Reporter) writeConsoleLegend() {
+	for i := 0; i <= r.MaxColumns/10; i++ {
 		for j := 0; j < 10; j++ {
 			if j == 0 {
-				fmt.Printf("%d", i)
+				num := fmt.Sprintf("%d", i)
+				if i >= 10 {
+					num = strings.TrimPrefix(num, "1")
+				}
+				fmt.Print(num)
 			} else {
 				fmt.Print(" ")
 			}
