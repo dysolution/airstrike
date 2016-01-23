@@ -2,10 +2,9 @@ package airstrike
 
 import (
 	"errors"
-	"runtime"
 	"strings"
+	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/airstrike/ordnance"
 	"github.com/dysolution/sleepwalker"
 )
@@ -29,10 +28,8 @@ type Plane struct {
 
 // NewPlane ensures that the creation of each Plane is logged.
 func NewPlane(name string, client sleepwalker.RESTClient) Plane {
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-	log.WithFields(logrus.Fields{
+	desc := "airstrike.NewPlane"
+	log.WithFields(map[string]interface{}{
 		"name":   name,
 		"client": client,
 	}).Debug(desc)
@@ -43,13 +40,13 @@ func NewPlane(name string, client sleepwalker.RESTClient) Plane {
 func (p *Plane) Arm(weapons ordnance.Arsenal) {
 	desc := "airstrike.(*Plane).Arm"
 	if len(weapons) == 0 {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"plane":   p.Name,
 			"weapons": weapons,
 			"error":   errors.New("no weapons provided"),
 		}).Error(desc)
 	} else {
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"plane":   p.Name,
 			"weapons": weapons,
 		}).Debug(desc)
@@ -59,37 +56,63 @@ func (p *Plane) Arm(weapons ordnance.Arsenal) {
 
 // Launch tells a Plane to sequentially fires all of its weapons and report
 // the results.
-func (p Plane) Launch() ([]sleepwalker.Result, error) {
+func (p Plane) Launch(logCh chan map[string]interface{}) ([]sleepwalker.Result, error) {
+	desc := "airstrike.Plane.Launch"
 	var results []sleepwalker.Result
 
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-
-	log.WithFields(logrus.Fields{
-		"plane": p,
-	}).Info(desc)
+	logCh <- map[string]interface{}{
+		"source": desc,
+		"plane":  p,
+	}
 
 	for _, weapon := range p.Arsenal {
-		result, err := p.fireWeapon(weapon)
+		result, err := p.fireWeapon(weapon, logCh)
 		if err != nil {
-			log.WithFields(logrus.Fields{
-				"error":  err,
-				"plane":  p,
-				"weapon": weapon,
-			}).Error(desc)
+			logCh <- map[string]interface{}{
+				"source":   desc,
+				"error":    err,
+				"plane":    p,
+				"weapon":   weapon,
+				"severity": "ERROR",
+			}
 		}
 		results = append(results, result)
 	}
-	log.Debugf(desc+" is returning %v results", len(results))
 	return results, nil
 }
 
-func (p Plane) fireWeapon(weapon ordnance.ArmedWeapon) (sleepwalker.Result, error) {
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+// runs in a goroutine (Raid.Conduct)
+func (plane Plane) launchAndReport(urlInvariant string, logCh chan map[string]interface{}, squadronID string) {
+	results, err := plane.Launch(logCh)
+	if err != nil {
+		logCh <- map[string]interface{}{
+			"error":    err,
+			"severity": "ERROR",
+		}
+	}
+	for weaponID, result := range results {
+		var path string
+		parts := strings.SplitAfter(result.Path, urlInvariant)
+		if len(parts) >= 2 {
+			path = parts[1]
+		} else {
+			path = result.Path
+		}
 
+		stats := map[string]interface{}{
+			"plane":         plane.Name,
+			"weapon_id":     weaponID,
+			"squadron_id":   squadronID,
+			"method":        result.Verb,
+			"path":          path,
+			"response_time": result.Duration * time.Millisecond,
+			"status_code":   result.StatusCode,
+		}
+		logCh <- stats
+	}
+}
+func (p Plane) fireWeapon(weapon ordnance.ArmedWeapon, logCh chan map[string]interface{}) (sleepwalker.Result, error) {
+	desc := "airstrike.Plane.fireWeapon"
 	if weapon == nil {
 		return sleepwalker.Result{}, errors.New("nil weapon")
 	}
@@ -97,12 +120,13 @@ func (p Plane) fireWeapon(weapon ordnance.ArmedWeapon) (sleepwalker.Result, erro
 		return sleepwalker.Result{}, errors.New("nil client")
 	}
 
-	log.WithFields(logrus.Fields{
+	logCh <- map[string]interface{}{
 		"client": p.Client,
 		"plane":  p,
 		"weapon": weapon,
-	}).Debug(desc)
+		"source": desc,
+	}
 
-	result, _ := weapon.Fire(p.Client) // Fire does its own error logging
+	result, _ := weapon.Fire(p.Client, logCh) // Fire does its own error logging
 	return result, nil
 }

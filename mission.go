@@ -1,10 +1,6 @@
 package airstrike
 
-import (
-	"time"
-
-	"github.com/Sirupsen/logrus"
-)
+import "time"
 
 // A Mission is a plan for the execution of "attacks" against an API and a
 // representation of its history since inception, including the number of
@@ -29,11 +25,11 @@ type Mission struct {
 // an API's infrastructure if your account is not subject to rate limits.
 // The shortest possible interval is one second, because seconds represented
 // as integers are easier to reason about than sub-second ones.
-func (m *Mission) SetInterval(newInterval int) {
+func (m *Mission) SetInterval(logCh chan map[string]interface{}, newInterval int) {
 	oldInterval := m.Interval
-	log.WithFields(logrus.Fields{
+	logCh <- map[string]interface{}{
 		"old_interval": oldInterval,
 		"new_interval": newInterval,
-	}).Debug("Mission.SetInterval")
+	}
 	m.Interval = newInterval
 }

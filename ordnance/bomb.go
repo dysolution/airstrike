@@ -3,10 +3,7 @@ package ordnance
 import (
 	"errors"
 	"fmt"
-	"runtime"
-	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/sleepwalker"
 )
 
@@ -35,23 +32,22 @@ func (b Bomb) String() string {
 // }
 
 // Fire deploys the Bullet.
-func (b Bomb) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-	log.WithFields(logrus.Fields{
-		"bomb": b,
-	}).Debug(desc)
+func (b Bomb) Fire(c sleepwalker.RESTClient, logCh chan map[string]interface{}) (sleepwalker.Result, error) {
+	desc := "airstrike.ordnance.Bomb.Fire"
+	logCh <- map[string]interface{}{
+		"bomb":   b,
+		"source": desc,
+	}
 
 	switch b.Method {
 	case "GET", "get":
-		return b.handler(b.Client.Get)
+		return b.handler(logCh, b.Client.Get)
 	case "POST", "post":
-		return b.handler(b.Client.Create)
+		return b.handler(logCh, b.Client.Create)
 	case "PUT", "put":
-		return b.handler(b.Client.Update)
+		return b.handler(logCh, b.Client.Update)
 	case "DELETE", "delete":
-		return b.handler(b.Client.Delete)
+		return b.handler(logCh, b.Client.Delete)
 	}
 	msg := fmt.Sprintf("%s.Fire: undefined method: %s", b.Name, b.Method)
 	return sleepwalker.Result{}, errors.New(msg)
@@ -62,41 +58,34 @@ func (b Bomb) NoPayloadError(desc string) error {
 	return errors.New(msg)
 }
 
-type NoPayloadError struct {
-	msg string
-	obj interface{}
-}
-
-func (e *NoPayloadError) Error() string {
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-	return fmt.Sprintf("%s: nil payload: %v", e.msg, e.obj)
-}
-
-func (b Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
-	myPC, _, _, _ := runtime.Caller(1) // report name of caller, not self
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
-
+func (b Bomb) handler(logCh chan map[string]interface{}, fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
+	desc := "airstrike/ordnance.Bomb.handler"
 	if b.Payload == nil {
-		log.Warn(&NoPayloadError{desc, b})
+		b.log(logCh, "WARN", desc, NoPayloadError{desc, b})
+	}
+
+	logCh <- map[string]interface{}{
+		"source":  desc,
+		"message": "just before calling fn",
 	}
 
 	result, err := fn(b.Payload)
 	if err != nil {
-		result.Log().WithFields(logrus.Fields{
-			"name":   b.Name,
-			"method": b.Method,
-			"path":   b.URL,
-			"error":  err,
-		}).Errorf(desc)
+		b.log(logCh, "ERROR", desc, err)
 		return sleepwalker.Result{}, err
 	}
-	result.Log().WithFields(logrus.Fields{
-		"name":   b.Name,
-		"method": b.Method,
-		"path":   b.URL,
-	}).Debug(desc)
+
+	b.log(logCh, "DEBUG", desc, nil)
 	return result, nil
+}
+
+func (b Bomb) log(logCh chan map[string]interface{}, severity, desc string, err error) {
+	logCh <- map[string]interface{}{
+		"name":     b.Name,
+		"method":   b.Method,
+		"path":     b.URL,
+		"error":    err,
+		"source":   desc,
+		"severity": severity,
+	}
 }

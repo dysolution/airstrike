@@ -2,6 +2,7 @@ package ordnance
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -14,6 +15,15 @@ import "github.com/Sirupsen/logrus"
 var log *logrus.Logger
 
 func init() {
+}
+
+type NoPayloadError struct {
+	msg string
+	obj interface{}
+}
+
+func (e NoPayloadError) Error() string {
+	return fmt.Sprintf("%s: nil payload: %v", e.msg, e.obj)
 }
 
 // An Armory maintains a collection of weapons that can be retrieved by name
@@ -36,7 +46,7 @@ func (a *Armory) NewBomb(client sleepwalker.RESTClient, name string, method stri
 	} else {
 		payloadPresent = false
 	}
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"name":             name,
 		"method":           method,
 		"path":             url,
@@ -53,7 +63,7 @@ func (a *Armory) NewBomb(client sleepwalker.RESTClient, name string, method stri
 }
 
 func (a *Armory) NewMissile(client sleepwalker.RESTClient, name string, op func(sleepwalker.RESTClient) (sleepwalker.Result, error)) {
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"name": name,
 	}).Debugf("Armory.NewMissile")
 	a.Weapons[name] = Missile{
@@ -67,13 +77,13 @@ func (a Armory) GetWeapon(name string) ArmedWeapon {
 	desc := "Armory.GetWeapon"
 	if a.Weapons[name] == nil {
 		err := errors.New("undefined weapon")
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"name":  name,
 			"error": err,
 		}).Error(desc)
 		return nil
 	}
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"name": name,
 	}).Debug(desc)
 	return a.Weapons[name]
@@ -86,7 +96,7 @@ func (a *Armory) GetRandomWeaponNames(count int) []string {
 		names = append(names, a.getRandomWeapon())
 	}
 
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"weapons": names,
 	}).Debug(desc)
 	return names

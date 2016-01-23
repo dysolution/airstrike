@@ -2,41 +2,44 @@ package airstrike
 
 import (
 	"fmt"
-	"time"
+	"math/rand"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/airstrike/ordnance"
 	"github.com/dysolution/sleepwalker"
-	"github.com/speps/go-hashids"
 )
 
 // A Squadron is a collection of Planes that will simultaneously begin
 // deploying their weapons.
 type Squadron struct {
-	ID     string  `json:"id"`
+	ID     string `json:"id"`
+	logCh  chan map[string]interface{}
 	Planes []Plane `json:"planes"`
 }
 
+func randHex(n int) string {
+	var letters = []rune("0123456789abcdef")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
 // NewSquadron assigns each new Squadron a unique ID and logs its creation.
-func NewSquadron(logger *logrus.Logger) Squadron {
-	log = logger
-	hd := hashids.NewData()
-	hd.Salt = "awakened salt"
-	hd.MinLength = 4
-	h := hashids.NewWithData(hd)
-	id, _ := h.Encode([]int{8, 2, 5, int(time.Now().UnixNano())})
+func NewSquadron(logCh chan map[string]interface{}) Squadron {
+	id := randHex(4)
 
-	log.WithFields(logrus.Fields{
-		"id": id,
-	}).Debug("airstrike.NewSquadron")
-
-	return Squadron{id, []Plane{}}
+	logCh <- map[string]interface{}{
+		"id":     id,
+		"source": "airstrike.NewSquadron",
+	}
+	return Squadron{id, logCh, []Plane{}}
 }
 
 // Add associates the provided Plane with the Squadron, logging its addition.
 func (s *Squadron) Add(plane Plane) {
 	s.Planes = append(s.Planes, plane)
-	log.WithFields(logrus.Fields{
+	log.WithFields(map[string]interface{}{
 		"plane": plane.Name,
 	}).Debug("airstrike.(*Squadron).Add")
 }
@@ -68,7 +71,7 @@ func (s *Squadron) AddChaos(clones int, deadliness int, client sleepwalker.RESTC
 		weaponNames := armory.GetRandomWeaponNames(deadliness)
 		var arsenal ordnance.Arsenal
 		for _, weaponName := range weaponNames {
-			log.WithFields(logrus.Fields{
+			log.WithFields(map[string]interface{}{
 				"plane":  name,
 				"weapon": weaponName,
 				"msg":    "adding weapon",

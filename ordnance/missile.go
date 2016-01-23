@@ -1,12 +1,6 @@
 package ordnance
 
-import (
-	"runtime"
-	"strings"
-
-	"github.com/Sirupsen/logrus"
-	"github.com/dysolution/sleepwalker"
-)
+import "github.com/dysolution/sleepwalker"
 
 // A Missile represents an action the API client performs whose URL isn't
 // known until runtime, such as the retrieval or deletion of the most
@@ -18,22 +12,21 @@ type Missile struct {
 }
 
 // Fire deploys the Missile.
-func (m Missile) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
-	myPC, _, _, _ := runtime.Caller(0)
-	desc := runtime.FuncForPC(myPC).Name()
-	desc = strings.SplitAfter(desc, "github.com/dysolution/")[1]
+func (m Missile) Fire(c sleepwalker.RESTClient, logCh chan map[string]interface{}) (sleepwalker.Result, error) {
+	desc := "airstrike.ordnance.Missile.Fire"
 
 	result, err := m.Operation(m.Client)
 	if err != nil {
-		result.Log().WithFields(logrus.Fields{
+		result.Log().WithFields(map[string]interface{}{
 			"name":  m.Name,
 			"error": err,
 		}).Errorf(desc)
 		return sleepwalker.Result{}, err
 	}
-	result.Log().WithFields(logrus.Fields{
-		"name": m.Name,
-	}).Debug(desc)
+	logCh <- map[string]interface{}{
+		"name":   m.Name,
+		"source": desc,
+	}
 	return result, nil
 }
 
