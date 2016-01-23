@@ -5,7 +5,7 @@ Load-testing or stress-testing an API can be imagined as an air strike, which
 consists of:
 
     1. a Mission that describes when and what ordnance will be deployed
-    2. a Squadron of planes that can simultaneously deploy their Arsenals
+    2. a Squadron of planes that will simultaneously deploy their Arsenals
     3. an Arsenal on each plane consisting of Bombs and Missiles
 
 The default Mission simultaneously commands each plane in the configured
@@ -14,11 +14,11 @@ hit its target and result in reportable damage (response time) sooner than
 others, and the output logging will reflect this, as the reports will typically
 arrive "out of order" as the concurrent weapon deployments finish.
 
-Bombs are used for API transactions where all inputs can be known before
-runtime. If you know the HTTP verb, URL, and (optional) payload ahead of time,
-you can use a Bomb. Bombs assume the state of objects associated with your
-account and as such must be trusted to hit their target. If they "miss" with a
-404 or other 4xx, this will be logged as an error.
+Bombs are used for API transactions where all inputs are known before runtime.
+If you know the HTTP verb, URL, and (optional) payload ahead of time, you can
+use a Bomb. Bombs assume the state of objects associated with your account and
+as such must be trusted to hit their target. If they "miss" with a 404 or other
+4xx, this will be logged as an error.
 
 Missiles are used for API transactions that depend on the current state of your
 account, such as deleting the most-recently-created object. You provide them
