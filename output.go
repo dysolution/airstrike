@@ -3,20 +3,25 @@ package airstrike
 import (
 	"fmt"
 	"runtime"
-	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
-
-	"time"
 )
 
 // A Reporter manages logging and console ouput.
 type Reporter struct {
-	CountGoroutines  bool
-	Gauge            bool
-	Glyph            byte
-	Logger           *logrus.Logger
+	CountGoroutines bool
+	Gauge           bool
+
+	// The Glyph is the character that will make up the horizontal bar gauge
+	// if gauge output is enabled.
+	Glyph byte
+
+	// The Logger can be anything API-compatible with logrus.Logger.
+	Logger *logrus.Logger
+
+	// This channel receives types that fulfill the logrus.Fields interface.
 	LogFields        chan map[string]interface{}
 	MaxColumns       int
 	URLInvariant     string
@@ -25,7 +30,8 @@ type Reporter struct {
 
 // Run should be invoked in a goroutine. Log data fulfilling the logrus.Fields
 // interface should be sent down its channel.
-func (r Reporter) Run() {
+func (r *Reporter) Run(ch chan map[string]interface{}) {
+	r.LogFields = ch
 	for {
 		select {
 		case fields := <-r.LogFields:
@@ -110,7 +116,7 @@ func (r Reporter) writeConsoleLegend() {
 			if j == 0 {
 				num := fmt.Sprintf("%d", i)
 				if i >= 10 {
-					num = strings.TrimPrefix(num, "1")
+					num = string(num[len(num)-1])
 				}
 				fmt.Print(num)
 			} else {

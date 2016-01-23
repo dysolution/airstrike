@@ -64,11 +64,6 @@ func (b Bomb) handler(logCh chan map[string]interface{}, fn func(sleepwalker.Fin
 		b.log(logCh, "WARN", desc, NoPayloadError{desc, b})
 	}
 
-	logCh <- map[string]interface{}{
-		"source":  desc,
-		"message": "just before calling fn",
-	}
-
 	result, err := fn(b.Payload)
 	if err != nil {
 		b.log(logCh, "ERROR", desc, err)
