@@ -82,8 +82,8 @@ func (p Plane) Launch(logCh chan map[string]interface{}) ([]sleepwalker.Result, 
 }
 
 // runs in a goroutine (Raid.Conduct)
-func (plane Plane) launchAndReport(urlInvariant string, logCh chan map[string]interface{}, squadronID string) {
-	results, err := plane.Launch(logCh)
+func (p Plane) launchAndReport(urlInvariant string, logCh chan map[string]interface{}, squadronID string) {
+	results, err := p.Launch(logCh)
 	if err != nil {
 		logCh <- map[string]interface{}{
 			"error":    err,
@@ -100,7 +100,7 @@ func (plane Plane) launchAndReport(urlInvariant string, logCh chan map[string]in
 		}
 
 		stats := map[string]interface{}{
-			"plane":         plane.Name,
+			"plane":         p.Name,
 			"weapon_id":     weaponID,
 			"squadron_id":   squadronID,
 			"method":        result.Verb,
