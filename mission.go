@@ -9,11 +9,11 @@ import "time"
 // Enabled missions are eligible for indefinite execution, with each attack
 // commencing every Interval seconds.
 type Mission struct {
-	Enabled      bool
-	Inception    time.Time
-	Interval     int
-	RaidCount    int
-	SquadronSize int
+	Enabled   bool      `json:"enabled"`
+	Inception time.Time `json:"inception"`
+	Interval  int       `json:"interval"`
+	RaidCount int       `json:"raid_count"`
+	Planes    []Plane   `json:"planes"`
 }
 
 // SetInterval changes the length of the pause that occurs between the

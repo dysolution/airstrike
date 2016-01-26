@@ -1,3 +1,5 @@
+// Package ordnance is concerned with constructing and storing weapons and
+// providing access to them by name.
 package ordnance
 
 import (
