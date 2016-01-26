@@ -29,13 +29,13 @@ func (e NoPayloadError) Error() string {
 // An Armory maintains a collection of weapons that can be retrieved by name
 // or at random.
 type Armory struct {
-	Weapons map[string]ArmedWeapon `json:"weapons"`
+	Weapons map[string]Weapon `json:"weapons"`
 }
 
 // NewArmory allows the logger to be specified.
 func NewArmory(logger *logrus.Logger) Armory {
 	log = logger
-	weapons := make(map[string]ArmedWeapon)
+	weapons := make(map[string]Weapon)
 	return Armory{Weapons: weapons}
 }
 
@@ -73,7 +73,7 @@ func (a *Armory) NewMissile(client sleepwalker.RESTClient, name string, op func(
 	}
 }
 
-func (a Armory) GetWeapon(name string) ArmedWeapon {
+func (a Armory) GetWeapon(name string) Weapon {
 	desc := "Armory.GetWeapon"
 	if a.Weapons[name] == nil {
 		err := errors.New("undefined weapon")

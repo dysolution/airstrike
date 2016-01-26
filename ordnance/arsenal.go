@@ -5,14 +5,14 @@ import (
 	"github.com/dysolution/sleepwalker"
 )
 
-type ArmedWeapon interface {
+type Weapon interface {
 	Fire(sleepwalker.RESTClient, chan map[string]interface{}) (sleepwalker.Result, error)
 	String() string
 }
 
-type Arsenal []ArmedWeapon
+type Arsenal []Weapon
 
-func NewArsenal(weapons ...ArmedWeapon) Arsenal {
+func NewArsenal(weapons ...Weapon) Arsenal {
 	var arsenal Arsenal
 	for _, weapon := range weapons {
 		arsenal = append(arsenal, weapon)

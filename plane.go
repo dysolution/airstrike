@@ -111,7 +111,7 @@ func (p Plane) launchAndReport(urlInvariant string, logCh chan map[string]interf
 		logCh <- stats
 	}
 }
-func (p Plane) fireWeapon(weapon ordnance.ArmedWeapon, logCh chan map[string]interface{}) (sleepwalker.Result, error) {
+func (p Plane) fireWeapon(weapon ordnance.Weapon, logCh chan map[string]interface{}) (sleepwalker.Result, error) {
 	desc := "airstrike.Plane.fireWeapon"
 	if weapon == nil {
 		return sleepwalker.Result{}, errors.New("nil weapon")
