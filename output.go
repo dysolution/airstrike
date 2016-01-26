@@ -22,10 +22,11 @@ type Reporter struct {
 	Logger *logrus.Logger
 
 	// This channel receives types that fulfill the logrus.Fields interface.
-	LogFields        chan map[string]interface{}
-	MaxColumns       int
-	URLInvariant     string
-	WarningThreshold time.Duration
+	LogFields         chan map[string]interface{}
+	MaxColumns        int
+	URLInvariant      string
+	WarningThreshold  time.Duration
+	ThresholdReceiver chan time.Duration
 }
 
 // Run should be invoked in a goroutine. Log data fulfilling the logrus.Fields
@@ -43,6 +44,7 @@ func (r *Reporter) Run(ch chan map[string]interface{}) {
 				}
 				r.writeConsoleGauge(responseTime)
 			}
+		case r.WarningThreshold = <-r.ThresholdReceiver:
 		default:
 		}
 	}
@@ -92,6 +94,7 @@ func (r Reporter) writeConsoleGauge(responseTime time.Duration) error {
 	blockMS := time.Duration(maxRes) / time.Duration(r.MaxColumns)
 	numBlocks := int(responseTime / blockMS / time.Millisecond)
 	if responseTime != time.Duration(0) {
+		fmt.Println()
 		r.writeConsoleLegend()
 		bar := r.makeBar(numBlocks, responseTime)
 
@@ -99,30 +102,36 @@ func (r Reporter) writeConsoleGauge(responseTime time.Duration) error {
 		defer color.Unset()
 
 		if responseTime > r.WarningThreshold {
-			color.Set(color.FgYellow, color.Bold)
+			color.Set(color.FgHiYellow, color.Bold)
 		}
 		if responseTime > time.Duration(maxRes)*time.Millisecond {
-			color.Set(color.FgRed, color.Bold)
+			color.Set(color.FgHiRed, color.Bold)
 		}
 		fmt.Printf("%s[%dms]", bar, responseTime/time.Millisecond)
-		fmt.Println()
 	}
 	return nil
 }
 
 func (r Reporter) writeConsoleLegend() {
-	for i := 0; i <= r.MaxColumns/10; i++ {
-		for j := 0; j < 10; j++ {
-			if j == 0 {
-				num := fmt.Sprintf("%d", i)
-				if i >= 10 {
+	for tens := 0; tens <= r.MaxColumns/10; tens++ {
+		for ones := 0; ones < 10; ones++ {
+			warningMsec := r.WarningThreshold / time.Nanosecond
+			gaugeMsec := time.Duration(((10*tens)+ones)*10) / 1 * time.Millisecond
+			// fmt.Printf("warningMsec: %v, gaugeMsec: %v\n", warningMsec, gaugeMsec)
+			if ones == 0 {
+				// print the multiples-of-ten grid line
+				num := fmt.Sprintf("%d", tens)
+				if tens >= 10 {
 					num = string(num[len(num)-1])
 				}
 				fmt.Print(num)
+			} else if gaugeMsec > warningMsec && (10*tens)+ones <= r.MaxColumns {
+				color.Set(color.FgRed, color.Faint)
+				fmt.Print(`░`)
+				color.Unset()
 			} else {
 				fmt.Print(" ")
 			}
-
 		}
 	}
 	fmt.Printf("\r")
