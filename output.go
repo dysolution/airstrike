@@ -22,10 +22,19 @@ type Reporter struct {
 	Logger *logrus.Logger
 
 	// This channel receives types that fulfill the logrus.Fields interface.
-	LogFields         chan map[string]interface{}
-	MaxColumns        int
-	URLInvariant      string
-	WarningThreshold  time.Duration
+	LogFields chan map[string]interface{}
+
+	// Number of columns the gauge will occupy.
+	GaugeWidth int
+
+	// A string to omit from URLs in order to shorten log messages, i.e., the
+	// API's base URL.
+	URLInvariant string
+
+	// Response times over this threshold will be logged at the WARN level.
+	WarningThreshold time.Duration
+
+	// Values received on this channel will become the new WarningThreshold.
 	ThresholdReceiver chan time.Duration
 }
 
@@ -39,8 +48,8 @@ func (r *Reporter) Run(ch chan map[string]interface{}) {
 			responseTime, _ := fields["response_time"].(time.Duration)
 			r.writeLog(responseTime, fields)
 			if r.Gauge {
-				if r.MaxColumns == 0 {
-					r.MaxColumns = 80
+				if r.GaugeWidth == 0 {
+					r.GaugeWidth = 80
 				}
 				r.writeConsoleGauge(responseTime)
 			}
@@ -81,7 +90,7 @@ func (r Reporter) makeBar(numBlocks int, responseTime time.Duration) string {
 
 	// allow chars for "nnnnms" text
 	for i := 0; i < numBlocks-charsToSave(responseTime); i++ {
-		if i < r.MaxColumns-charsToSave(responseTime) {
+		if i < r.GaugeWidth-charsToSave(responseTime) {
 			a = append(a, r.Glyph)
 		}
 	}
@@ -90,8 +99,8 @@ func (r Reporter) makeBar(numBlocks int, responseTime time.Duration) string {
 
 func (r Reporter) writeConsoleGauge(responseTime time.Duration) error {
 	// 80 chars * 1 block per 10 ms = 800 ms max resolution
-	maxRes := r.MaxColumns * 10
-	blockMS := time.Duration(maxRes) / time.Duration(r.MaxColumns)
+	maxRes := r.GaugeWidth * 10
+	blockMS := time.Duration(maxRes) / time.Duration(r.GaugeWidth)
 	numBlocks := int(responseTime / blockMS / time.Millisecond)
 	if responseTime != time.Duration(0) {
 		fmt.Println()
@@ -113,7 +122,7 @@ func (r Reporter) writeConsoleGauge(responseTime time.Duration) error {
 }
 
 func (r Reporter) writeConsoleLegend() {
-	for tens := 0; tens <= r.MaxColumns/10; tens++ {
+	for tens := 0; tens <= r.GaugeWidth/10; tens++ {
 		for ones := 0; ones < 10; ones++ {
 			warningMsec := r.WarningThreshold / time.Nanosecond
 			gaugeMsec := time.Duration(((10*tens)+ones)*10) / 1 * time.Millisecond
@@ -125,7 +134,7 @@ func (r Reporter) writeConsoleLegend() {
 					num = string(num[len(num)-1])
 				}
 				fmt.Print(num)
-			} else if gaugeMsec > warningMsec && (10*tens)+ones <= r.MaxColumns {
+			} else if gaugeMsec > warningMsec && (10*tens)+ones <= r.GaugeWidth {
 				color.Set(color.FgRed, color.Faint)
 				fmt.Print(`░`)
 				color.Unset()
