@@ -11,14 +11,17 @@ import (
 
 // A Reporter manages logging and console ouput.
 type Reporter struct {
+	// Include in log messages the number of running goroutines.
 	CountGoroutines bool
-	Gauge           bool
+
+	// Display an ANSI-colorized graph of response times on STDOUT.
+	Gauge bool
 
 	// The Glyph is the character that will make up the horizontal bar gauge
 	// if gauge output is enabled.
 	Glyph byte
 
-	// The Logger can be anything API-compatible with logrus.Logger.
+	// A reference to a logger.
 	Logger *logrus.Logger
 
 	// This channel receives types that fulfill the logrus.Fields interface.
