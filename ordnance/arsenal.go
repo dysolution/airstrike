@@ -6,7 +6,7 @@ import (
 )
 
 type Weapon interface {
-	Fire(sleepwalker.RESTClient, chan map[string]interface{}) (sleepwalker.Result, error)
+	Fire(sleepwalker.RESTClient) (sleepwalker.Result, error)
 	String() string
 }
 

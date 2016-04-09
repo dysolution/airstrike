@@ -127,6 +127,6 @@ func (p Plane) fireWeapon(weapon ordnance.Weapon, logCh chan map[string]interfac
 		"source": desc,
 	}
 
-	result, _ := weapon.Fire(p.Client, logCh) // Fire does its own error logging
+	result, _ := weapon.Fire(p.Client)
 	return result, nil
 }

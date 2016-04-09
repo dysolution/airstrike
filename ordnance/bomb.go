@@ -32,22 +32,16 @@ func (b Bomb) String() string {
 // }
 
 // Fire deploys the Bullet.
-func (b Bomb) Fire(c sleepwalker.RESTClient, logCh chan map[string]interface{}) (sleepwalker.Result, error) {
-	desc := "airstrike.ordnance.Bomb.Fire"
-	logCh <- map[string]interface{}{
-		"bomb":   b,
-		"source": desc,
-	}
-
+func (b Bomb) Fire(c sleepwalker.RESTClient) (sleepwalker.Result, error) {
 	switch b.Method {
 	case "GET", "get":
-		return b.handler(logCh, b.Client.Get)
+		return b.handler(b.Client.Get)
 	case "POST", "post":
-		return b.handler(logCh, b.Client.Create)
+		return b.handler(b.Client.Create)
 	case "PUT", "put":
-		return b.handler(logCh, b.Client.Update)
+		return b.handler(b.Client.Update)
 	case "DELETE", "delete":
-		return b.handler(logCh, b.Client.Delete)
+		return b.handler(b.Client.Delete)
 	}
 	msg := fmt.Sprintf("%s.Fire: undefined method: %s", b.Name, b.Method)
 	return sleepwalker.Result{}, errors.New(msg)
@@ -58,19 +52,11 @@ func (b Bomb) NoPayloadError(desc string) error {
 	return errors.New(msg)
 }
 
-func (b Bomb) handler(logCh chan map[string]interface{}, fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
-	desc := "airstrike/ordnance.Bomb.handler"
-	if b.Payload == nil {
-		b.log(logCh, "WARN", desc, NoPayloadError{desc, b})
-	}
-
+func (b Bomb) handler(fn func(sleepwalker.Findable) (sleepwalker.Result, error)) (sleepwalker.Result, error) {
 	result, err := fn(b.Payload)
 	if err != nil {
-		b.log(logCh, "ERROR", desc, err)
 		return sleepwalker.Result{}, err
 	}
-
-	b.log(logCh, "DEBUG", desc, nil)
 	return result, nil
 }
 

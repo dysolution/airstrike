@@ -3,8 +3,6 @@ package airstrike
 import (
 	"encoding/json"
 	"errors"
-
-	"github.com/Sirupsen/logrus"
 )
 
 // A SimpleRaid reports only the name of each object to simplify output.
@@ -24,7 +22,7 @@ type Raid struct {
 
 // Conduct tells the Squadron to launch all of its planes. Each Plane serially
 // fires its weapons and sends the result of each weapon down a channel.
-func (r *Raid) Conduct(logger *logrus.Logger, urlInvariant string, logCh chan map[string]interface{}) {
+func (r *Raid) Conduct(urlInvariant string, logCh chan map[string]interface{}) {
 	logCh <- map[string]interface{}{
 		"msg":    "creating a squadron",
 		"source": "airstrike.Raid.Conduct",

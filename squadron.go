@@ -11,8 +11,7 @@ import (
 // A Squadron is a collection of Planes that will simultaneously begin
 // deploying their weapons.
 type Squadron struct {
-	ID     string `json:"id"`
-	logCh  chan map[string]interface{}
+	ID     string  `json:"id"`
 	Planes []Plane `json:"planes"`
 }
 
@@ -28,12 +27,7 @@ func randHex(n int) string {
 // NewSquadron assigns each new Squadron a unique ID and logs its creation.
 func NewSquadron(logCh chan map[string]interface{}) Squadron {
 	id := randHex(4)
-
-	logCh <- map[string]interface{}{
-		"id":     id,
-		"source": "airstrike.NewSquadron",
-	}
-	return Squadron{id, logCh, []Plane{}}
+	return Squadron{id, []Plane{}}
 }
 
 // Add associates the provided Plane with the Squadron, logging its addition.

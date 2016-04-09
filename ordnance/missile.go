@@ -12,22 +12,9 @@ type Missile struct {
 }
 
 // Fire deploys the Missile.
-func (m Missile) Fire(c sleepwalker.RESTClient, logCh chan map[string]interface{}) (sleepwalker.Result, error) {
-	desc := "airstrike.ordnance.Missile.Fire"
-
-	result, err := m.Operation(m.Client)
-	if err != nil {
-		result.Log().WithFields(map[string]interface{}{
-			"name":  m.Name,
-			"error": err,
-		}).Errorf(desc)
-		return sleepwalker.Result{}, err
-	}
-	logCh <- map[string]interface{}{
-		"name":   m.Name,
-		"source": desc,
-	}
-	return result, nil
+func (m Missile) Fire(c sleepwalker.RESTClient) (result sleepwalker.Result, err error) {
+	result, err = m.Operation(m.Client)
+	return
 }
 
 func (m Missile) String() string {

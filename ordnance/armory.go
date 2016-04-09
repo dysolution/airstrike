@@ -9,10 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/dysolution/sleepwalker"
 )
-
-import "github.com/Sirupsen/logrus"
 
 var log *logrus.Logger
 
@@ -35,8 +34,8 @@ type Armory struct {
 }
 
 // NewArmory allows the logger to be specified.
-func NewArmory(logger *logrus.Logger) Armory {
-	log = logger
+func NewArmory(l *logrus.Logger) Armory {
+	log = l
 	weapons := make(map[string]Weapon)
 	return Armory{Weapons: weapons}
 }

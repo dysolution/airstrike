@@ -2,7 +2,6 @@ package airstrike
 
 import (
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -11,9 +10,6 @@ import (
 
 // A Reporter manages logging and console ouput.
 type Reporter struct {
-	// Include in log messages the number of running goroutines.
-	CountGoroutines bool
-
 	// Display an ANSI-colorized graph of response times on STDOUT.
 	Gauge bool
 
@@ -25,7 +21,7 @@ type Reporter struct {
 	Logger *logrus.Logger
 
 	// This channel receives types that fulfill the logrus.Fields interface.
-	LogFields chan map[string]interface{}
+	LogCh chan map[string]interface{}
 
 	// Number of columns the gauge will occupy.
 	GaugeWidth int
@@ -38,16 +34,23 @@ type Reporter struct {
 	WarningThreshold time.Duration
 
 	// Values received on this channel will become the new WarningThreshold.
-	ThresholdReceiver chan time.Duration
+	ThresholdCh chan time.Duration
+}
+
+func NewReporter(logger *logrus.Logger) *Reporter {
+	return &Reporter{
+		Logger:      logger,
+		LogCh:       make(chan map[string]interface{}, 1),
+		ThresholdCh: make(chan time.Duration),
+	}
 }
 
 // Run should be invoked in a goroutine. Log data fulfilling the logrus.Fields
 // interface should be sent down its channel.
-func (r *Reporter) Run(ch chan map[string]interface{}) {
-	r.LogFields = ch
+func (r *Reporter) Listen() {
 	for {
 		select {
-		case fields := <-r.LogFields:
+		case fields := <-r.LogCh:
 			responseTime, _ := fields["response_time"].(time.Duration)
 			r.writeLog(responseTime, fields)
 			if r.Gauge {
@@ -56,7 +59,7 @@ func (r *Reporter) Run(ch chan map[string]interface{}) {
 				}
 				r.writeConsoleGauge(responseTime)
 			}
-		case r.WarningThreshold = <-r.ThresholdReceiver:
+		case r.WarningThreshold = <-r.ThresholdCh:
 		default:
 		}
 	}
@@ -80,9 +83,6 @@ func (r Reporter) writeLog(responseTime time.Duration, fields map[string]interfa
 		case "ERROR", "error":
 			r.Logger.WithFields(fields).Error(desc)
 		default:
-			if r.CountGoroutines {
-				desc = fmt.Sprintf("%s (gr: %v)", desc, runtime.NumGoroutine())
-			}
 			r.Logger.WithFields(fields).Debug(desc)
 		}
 	}
