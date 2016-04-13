@@ -25,7 +25,7 @@ func randHex(n int) string {
 }
 
 // NewSquadron assigns each new Squadron a unique ID and logs its creation.
-func NewSquadron(logCh chan map[string]interface{}) Squadron {
+func NewSquadron() Squadron {
 	id := randHex(4)
 	return Squadron{id, []Plane{}}
 }

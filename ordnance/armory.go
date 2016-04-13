@@ -3,17 +3,15 @@
 package ordnance
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/dysolution/sleepwalker"
+	sw "github.com/dysolution/sleepwalker"
 )
 
-var log *logrus.Logger
+// var log *logrus.Logger
 
 func init() {
 }
@@ -34,26 +32,12 @@ type Armory struct {
 }
 
 // NewArmory allows the logger to be specified.
-func NewArmory(l *logrus.Logger) Armory {
-	log = l
+func NewArmory() Armory {
 	weapons := make(map[string]Weapon)
 	return Armory{Weapons: weapons}
 }
 
-func (a *Armory) NewBomb(client sleepwalker.RESTClient, name string, method string, url string, payload sleepwalker.RESTObject) {
-	var payloadPresent bool
-	if payload != nil {
-		payloadPresent = true
-	} else {
-		payloadPresent = false
-	}
-	log.WithFields(map[string]interface{}{
-		"name":             name,
-		"method":           method,
-		"path":             url,
-		"payload_included": payloadPresent,
-	}).Debugf("Armory.NewBomb")
-
+func (a *Armory) NewBomb(client sw.RESTClient, name string, method string, url string, payload sw.RESTObject) {
 	a.Weapons[name] = Bomb{
 		Client:  client,
 		Name:    name,
@@ -63,10 +47,7 @@ func (a *Armory) NewBomb(client sleepwalker.RESTClient, name string, method stri
 	}
 }
 
-func (a *Armory) NewMissile(client sleepwalker.RESTClient, name string, op func(sleepwalker.RESTClient) (sleepwalker.Result, error)) {
-	log.WithFields(map[string]interface{}{
-		"name": name,
-	}).Debugf("Armory.NewMissile")
+func (a *Armory) NewMissile(client sw.RESTClient, name string, op func(sw.RESTClient) (sw.Result, error)) {
 	a.Weapons[name] = Missile{
 		Client:    client,
 		Name:      name,
@@ -75,32 +56,17 @@ func (a *Armory) NewMissile(client sleepwalker.RESTClient, name string, op func(
 }
 
 func (a Armory) GetWeapon(name string) Weapon {
-	desc := "Armory.GetWeapon"
 	if a.Weapons[name] == nil {
-		err := errors.New("undefined weapon")
-		log.WithFields(map[string]interface{}{
-			"name":  name,
-			"error": err,
-		}).Error(desc)
 		return nil
 	}
-	log.WithFields(map[string]interface{}{
-		"name": name,
-	}).Debug(desc)
 	return a.Weapons[name]
 }
 
-func (a *Armory) GetRandomWeaponNames(count int) []string {
-	desc := "Armory.GetRandomWeaponNames"
-	var names []string
+func (a *Armory) GetRandomWeaponNames(count int) (names []string) {
 	for i := count; i > 0; i-- {
 		names = append(names, a.getRandomWeapon())
 	}
-
-	log.WithFields(map[string]interface{}{
-		"weapons": names,
-	}).Debug(desc)
-	return names
+	return
 }
 
 func (a *Armory) getRandomWeapon() string {

@@ -14,23 +14,26 @@ import (
 // Enabled missions are eligible for indefinite execution, with each attack
 // commencing every Interval seconds.
 type Mission struct {
-	Enabled         bool         `json:"enabled"`
-	EnabledCh       chan bool    `json:"-"`
-	Inception       time.Time    `json:"inception"`
-	Interval        float64      `json:"interval"`
-	IntervalDeltaCh chan float64 `json:"-"`
-	Planes          []Plane      `json:"planes"`
-	RaidCount       int          `json:"raid_count"`
-	Reporter        *Reporter    `json:"-"`
-	Status          int          `json:"status"`
-	StatusCh        chan int     `json:"-"`
+	Enabled         bool          `json:"enabled"`
+	EnabledCh       chan bool     `json:"-"`
+	Inception       time.Time     `json:"inception"`
+	Interval        float64       `json:"interval"`
+	IntervalDeltaCh chan float64  `json:"-"`
+	MaxResponseTime time.Duration `json:"max_response_time"`
+	Planes          []Plane       `json:"planes"`
+	RaidCount       int           `json:"raid_count"`
+	Reporter        *Reporter     `json:"-"`
+	Status          int           `json:"status"`
+	StatusCh        chan int      `json:"-"`
 }
 
 func NewMission(l *logrus.Logger) *Mission {
 	return &Mission{
-		Enabled:   false,
-		Inception: time.Now(),
-		Reporter:  NewReporter(l),
+		Enabled:         false,
+		EnabledCh:       make(chan bool, 1),
+		Inception:       time.Now(),
+		IntervalDeltaCh: make(chan float64, 1),
+		Reporter:        NewReporter(l),
 	}
 }
 
@@ -53,14 +56,12 @@ func (m *Mission) SetInterval(logCh chan map[string]interface{}, newInterval flo
 }
 
 // runs in a goroutine
-func (m *Mission) Begin(config Raid) {
-	desc := "Mission.Begin"
+func (m *Mission) Prosecute(config Raid) {
+	desc := "Mission.Prosecute"
 
-	r := m.Reporter
+	go m.Reporter.Listen()
 
-	go r.Listen()
-
-	r.LogCh <- map[string]interface{}{
+	m.Reporter.LogCh <- map[string]interface{}{
 		"severity": "info",
 		"source":   desc,
 		"interval": m.Interval,
@@ -72,16 +73,16 @@ func (m *Mission) Begin(config Raid) {
 		case m.Status = <-m.StatusCh:
 		case d := <-m.IntervalDeltaCh:
 			m.setInterval(d)
-			r.ThresholdCh <- time.Duration(m.Interval) * time.Millisecond
+			m.Reporter.ThresholdCh <- time.Duration(m.Interval) * time.Millisecond
 		default:
 		}
 
 		if m.Enabled {
-			r.LogCh <- map[string]interface{}{
+			m.Reporter.LogCh <- map[string]interface{}{
 				"msg":    "conducting raid",
 				"source": desc,
 			}
-			config.Conduct(espsdk.APIInvariant, r.LogCh)
+			config.Conduct(espsdk.APIInvariant, m.Reporter.LogCh)
 			m.RaidCount++
 		}
 		m.pauseBetweenRaids()
@@ -93,13 +94,12 @@ func (m *Mission) pauseBetweenRaids() {
 }
 
 func (m *Mission) setInterval(d float64) {
-	logCh := m.Reporter.LogCh
 	oldInterval := m.Interval
 	m.Interval = float64(m.Interval) + d
 	if m.Interval <= 0 {
 		m.Interval = float64(0.1)
 	}
-	logCh <- map[string]interface{}{
+	m.Reporter.LogCh <- map[string]interface{}{
 		"interval_delta": d,
 		"interval_new":   m.Interval,
 		"interval_old":   oldInterval,

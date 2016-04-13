@@ -27,7 +27,7 @@ func (r *Raid) Conduct(urlInvariant string, logCh chan map[string]interface{}) {
 		"msg":    "creating a squadron",
 		"source": "airstrike.Raid.Conduct",
 	}
-	squadron := NewSquadron(logCh)
+	squadron := NewSquadron()
 	for _, plane := range r.Planes {
 		go plane.launchAndReport(urlInvariant, logCh, squadron.ID)
 	}

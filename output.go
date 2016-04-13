@@ -2,6 +2,7 @@ package airstrike
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -26,8 +27,8 @@ type Reporter struct {
 	// Number of columns the gauge will occupy.
 	GaugeWidth int
 
-	// A string to omit from URLs in order to shorten log messages, i.e., the
-	// API's base URL.
+	// A string to omit from URLs in order to shorten log messages, i.e.,
+	// the API's base URL.
 	URLInvariant string
 
 	// Response times over this threshold will be logged at the WARN level.
@@ -35,24 +36,36 @@ type Reporter struct {
 
 	// Values received on this channel will become the new WarningThreshold.
 	ThresholdCh chan time.Duration
+
+	// This channel holds the response time of the last result.
+	LastResponseTimeCh chan time.Duration
 }
 
 func NewReporter(logger *logrus.Logger) *Reporter {
 	return &Reporter{
-		Logger:      logger,
-		LogCh:       make(chan map[string]interface{}, 1),
-		ThresholdCh: make(chan time.Duration),
+		Logger:             logger,
+		LogCh:              make(chan map[string]interface{}),
+		ThresholdCh:        make(chan time.Duration, 1),
+		LastResponseTimeCh: make(chan time.Duration, 1),
 	}
 }
 
-// Run should be invoked in a goroutine. Log data fulfilling the logrus.Fields
-// interface should be sent down its channel.
+// Run should be invoked in a goroutine. Log data fulfilling the
+// logrus.Fields interface should be sent down its channel.
 func (r *Reporter) Listen() {
 	for {
 		select {
 		case fields := <-r.LogCh:
-			responseTime, _ := fields["response_time"].(time.Duration)
-			r.writeLog(responseTime, fields)
+			responseTime, ok := fields["response_time"].(time.Duration)
+			if ok {
+				// fmt.Println("reporting the response time")
+				select {
+				case r.LastResponseTimeCh <- responseTime:
+					fmt.Println("successfully reported the response time")
+				default:
+				}
+				r.writeLog(responseTime, fields)
+			}
 			if r.Gauge {
 				if r.GaugeWidth == 0 {
 					r.GaugeWidth = 80
@@ -75,12 +88,12 @@ func (r Reporter) writeLog(responseTime time.Duration, fields map[string]interfa
 			r.Logger.WithFields(fields).Info(desc)
 		}
 	} else {
-		switch fields["severity"] {
-		case "INFO", "info":
+		switch strings.ToUpper(fields["severity"].(string)) {
+		case "INFO":
 			r.Logger.WithFields(fields).Info(desc)
-		case "WARN", "warn":
+		case "WARN":
 			r.Logger.WithFields(fields).Warn(desc)
-		case "ERROR", "error":
+		case "ERROR":
 			r.Logger.WithFields(fields).Error(desc)
 		default:
 			r.Logger.WithFields(fields).Debug(desc)
